@@ -1,0 +1,75 @@
+#include <WiFi.h>
+#include <ESP_Mail_Client.h>  
+
+const char* ssid = "Realme 11";
+const char* password = "Theju123";
+
+
+#define AUTHOR_EMAIL "megnamohan134@gmail.com"
+#define AUTHOR_PASSWORD "ksyb ebxb vrlb mrpj"  
+
+
+#define RECIPIENT_EMAIL "thejaswithamannuru30@gmail.com"
+
+
+#define SMTP_HOST "smtp.gmail.com"
+#define SMTP_PORT 465
+
+
+const int gasSensorPin = 34;
+const int gasThreshold = 400;
+
+SMTPSession smtp;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(gasSensorPin, INPUT);
+
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
+
+  
+  smtp.debug(1);
+  ESP_Mail_Session session;
+  session.server.host_name = SMTP_HOST;
+  session.server.port = SMTP_PORT;
+  session.login.email = AUTHOR_EMAIL;
+  session.login.password = AUTHOR_PASSWORD;
+  session.login.user_domain = "";
+
+  SMTP_Message message;
+  message.sender.name = "ESP32 Gas Sensor";
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = "Gas Alert!";
+  message.addRecipient("User", RECIPIENT_EMAIL);
+  message.text.content = "Warning: Gas levels have exceeded the safe threshold!";
+  message.text.charSet = "utf-8";
+  message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+
+  int gasValue = analogRead(gasSensorPin);
+  Serial.print("Initial gas value: ");
+  Serial.println(gasValue);
+
+  if (gasValue > gasThreshold) {
+    if (!smtp.connect(&session)) {
+      Serial.println("Failed to connect to mail server");
+      return;
+    }
+
+    if (!MailClient.sendMail(&smtp, &message)) {
+      Serial.print("Error sending email: ");
+      Serial.println(smtp.errorReason());
+    } else {
+      Serial.println("Email sent successfully!");
+    }
+  }
+}
+
+void loop() {
+  
+}
